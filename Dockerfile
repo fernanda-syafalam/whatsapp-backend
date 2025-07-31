@@ -52,4 +52,4 @@ COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 USER node
 
 # Start the server
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main"]
