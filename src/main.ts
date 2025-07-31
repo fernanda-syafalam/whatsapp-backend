@@ -23,6 +23,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new ApiResponseInterceptor());
+  console.log('Server is running on port:', process.env.PORT ?? 3000);
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
