@@ -1,31 +1,20 @@
-# Build stage
-FROM node:lts-alpine AS builder
- 
-# Enable pnpm
-ENV PNPM_ENABLE=true
+FROM node:20
 
-USER node
-WORKDIR /home/node
- 
-COPY package*.json .
-RUN npm install -g pnpm && pnpm i --frozen-lockfile
- 
-COPY --chown=node:node . .
-RUN pnpm run build && pnpm prune --omit=dev
- 
- 
-# Final run stage
-FROM node:lts-alpine
- 
-ENV NODE_ENV production
-USER node
-WORKDIR /home/node
- 
-COPY --from=builder --chown=node:node /home/node/package*.json .
-COPY --from=builder --chown=node:node /home/node/node_modules ./node_modules
-COPY --from=builder --chown=node:node /home/node/dist ./dist
- 
-ARG PORT
-EXPOSE ${PORT:-3000}
- 
-CMD ["node", "dist/main.js"]
+WORKDIR /usr/src/app
+
+COPY package*.json pnpm-lock.yaml* ./
+
+# Install the application dependencies
+RUN corepack enable pnpm && pnpm i --frozen-lockfile
+
+
+COPY . .
+
+
+RUN npm run build
+
+# Expose the application port
+EXPOSE 3000
+
+# Command to run the application
+CMD ["node", "dist/src/main"]
