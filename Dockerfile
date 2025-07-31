@@ -23,6 +23,11 @@ COPY . .
 # Pastikan skrip build Anda di package.json adalah `nest build` atau yang serupa
 RUN pnpm run build
 
+# --- DEBUG: Periksa isi folder dist setelah build di tahap builder ---
+RUN echo "--- Contents of /app/dist after build in builder stage ---"
+RUN ls -l /app/dist
+RUN echo "--------------------------------------------------------"
+
 # --- Tahap 2: Final Image Produksi ---
 # Menggunakan image Node.js Alpine yang lebih kecil untuk runtime
 FROM node:22-alpine AS runner
@@ -30,7 +35,7 @@ FROM node:22-alpine AS runner
 # Atur direktori kerja di dalam container
 WORKDIR /app
 
-# Instal pnpm secara global
+# Instal pnpm secara global (diperlukan jika skrip start menggunakan pnpm)
 RUN npm install -g pnpm
 
 # Buat user non-root untuk keamanan
@@ -51,6 +56,11 @@ COPY --from=builder /app/package.json ./package.json
 # Salin file yang dibutuhkan lainnya (misalnya, .env.production jika ada, atau file statis)
 # Namun, untuk variabel lingkungan sensitif, lebih baik disuntikkan saat runtime
 # COPY --from=builder /app/.env.production ./.env
+
+# --- DEBUG: Periksa isi folder dist di tahap runner ---
+RUN echo "--- Contents of /app/dist in runner stage before starting ---"
+RUN ls -l /app/dist
+RUN echo "-----------------------------------------------------------"
 
 # Ekspos port yang digunakan aplikasi NestJS (default 3000)
 EXPOSE 3030
