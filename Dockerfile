@@ -1,70 +1,55 @@
-# --- Tahap 1: Build Aplikasi NestJS ---
-# Menggunakan image Node.js Alpine yang lebih kecil untuk tahap build
-FROM node:22-alpine AS builder
-
-# Atur direktori kerja di dalam container
+FROM node:18-alpine AS deps
 WORKDIR /app
 
-# Salin package.json dan pnpm-lock.yaml terlebih dahulu untuk memanfaatkan caching Docker
-# Jika file-file ini tidak berubah, Docker tidak akan menjalankan ulang `pnpm install`
-COPY package.json pnpm-lock.yaml ./
+# Copy only the files needed to install dependencies
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
 
-# Instal pnpm secara global
-RUN npm install -g pnpm
+# Install dependencies with the preferred package manager
+RUN \
+  if [ -f package-lock.json ]; then npm ci; \
+  elif [ -f yarn.lock ]; then yarn --frozen-lockfile; \
+  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
 
-# Instal semua dependensi (termasuk devDependencies)
-# `pnpm install` lebih baik daripada `npm install` di CI/CD karena memastikan versi yang tepat dari pnpm-lock.yaml
-RUN pnpm install
 
-# Salin sisa kode aplikasi
+FROM node:18-alpine AS builder
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy the rest of the files
 COPY . .
 
-# Jalankan build produksi NestJS
-# Pastikan skrip build Anda di package.json adalah `nest build` atau yang serupa
-RUN pnpm run build
+# Run build with the preferred package manager
+RUN \
+  if [ -f package-lock.json ]; then npm run build; \
+  elif [ -f yarn.lock ]; then yarn build; \
+  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm build; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
 
-# --- DEBUG: Periksa isi folder dist setelah build di tahap builder ---
-RUN echo "--- Contents of /app/dist after build in builder stage ---"
-RUN ls -l /app/dist
-RUN echo "--------------------------------------------------------"
+# Set NODE_ENV environment variable
+ENV NODE_ENV production
 
-# --- Tahap 2: Final Image Produksi ---
-# Menggunakan image Node.js Alpine yang lebih kecil untuk runtime
-FROM node:22-alpine AS runner
+# Re-run install only for production dependencies
+RUN \
+  if [ -f package-lock.json ]; then npm ci --only=production && npm cache clean --force; \
+  elif [ -f yarn.lock ]; then yarn --frozen-lockfile --production && yarn cache clean; \
+  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile --prod; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
 
-# Atur direktori kerja di dalam container
+
+FROM node:18-alpine AS runner
 WORKDIR /app
 
-# Instal pnpm secara global (diperlukan jika skrip start menggunakan pnpm)
-RUN npm install -g pnpm
+# Copy the bundled code from the builder stage
+COPY --from=builder --chown=node:node /app/dist ./dist
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 
-# Buat user non-root untuk keamanan
-# Ini adalah praktik terbaik untuk menghindari menjalankan aplikasi sebagai root
-RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
-USER appuser
+# Use the node user from the image
+USER node
 
-# Salin hanya dependensi produksi dari tahap builder
-# Ini akan menjaga ukuran image final tetap kecil
-COPY --from=builder /app/node_modules ./node_modules
-
-# Salin hasil build aplikasi NestJS dari tahap builder
-COPY --from=builder /app/dist ./dist
-
-# Salin file package.json untuk menjalankan skrip start
-COPY --from=builder /app/package.json ./package.json
-
-# Salin file yang dibutuhkan lainnya (misalnya, .env.production jika ada, atau file statis)
-# Namun, untuk variabel lingkungan sensitif, lebih baik disuntikkan saat runtime
-# COPY --from=builder /app/.env.production ./.env
-
-# --- DEBUG: Periksa isi folder dist di tahap runner ---
-RUN echo "--- Contents of /app/dist in runner stage before starting ---"
-RUN ls -l /app/dist
-RUN echo "-----------------------------------------------------------"
-
-# Ekspos port yang digunakan aplikasi NestJS (default 3000)
-EXPOSE 3030
-
-# Perintah untuk menjalankan aplikasi NestJS
-# Pastikan skrip start Anda di package.json adalah `node dist/main` atau yang serupa
-CMD ["pnpm", "run", "start:prod"]
+# Start the server
+CMD ["node", "dist/main.js"]
