@@ -9,6 +9,9 @@ WORKDIR /app
 # Jika file-file ini tidak berubah, Docker tidak akan menjalankan ulang `pnpm install`
 COPY package.json pnpm-lock.yaml ./
 
+# Instal pnpm secara global
+RUN npm install -g pnpm
+
 # Instal semua dependensi (termasuk devDependencies)
 # `pnpm install` lebih baik daripada `npm install` di CI/CD karena memastikan versi yang tepat dari pnpm-lock.yaml
 RUN pnpm install
@@ -26,6 +29,9 @@ FROM node:22-alpine AS runner
 
 # Atur direktori kerja di dalam container
 WORKDIR /app
+
+# Instal pnpm secara global
+RUN npm install -g pnpm
 
 # Buat user non-root untuk keamanan
 # Ini adalah praktik terbaik untuk menghindari menjalankan aplikasi sebagai root
