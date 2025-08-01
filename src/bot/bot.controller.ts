@@ -24,10 +24,7 @@ export class BotController {
 
   @Get()
   async findAll(@Query() paginationQuery: PaginationQueryDto) {
-     return await this.botService.findAll(
-      paginationQuery
-    );
-   
+    return await this.botService.findAll(paginationQuery);
   }
 
   @Get(':id')
