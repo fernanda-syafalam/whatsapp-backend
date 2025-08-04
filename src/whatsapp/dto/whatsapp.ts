@@ -1,50 +1,111 @@
-import { IsString } from "class-validator";
+import { ApiProperty } from '@nestjs/swagger';
+import { IsString } from 'class-validator';
+import { createSingleSuccessResponseDto } from 'common/dto/api-response.dto';
 
 export class DeviceID {
+  @ApiProperty({
+    description: 'Device ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
   @IsString()
-  deviceID: string;
+  id: string;
 }
 
-export interface GetDevicesResponse {
+export class GetDevicesResponse {
   success: boolean;
   code: number;
   message: string[];
 }
 
-export interface GetGroupsResponse {
+export class GetGroupsResponse {
   success: boolean;
   code: number;
   message: Group[];
 }
 
-export interface Group {
+export class Group {
+  @ApiProperty({
+    description: 'Group ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
   id: string;
+
+  @ApiProperty({
+    description: 'Group name',
+    example: 'John Doe',
+  })
   subject: string;
-  subjectOwner?: string | undefined;
-  subjectTime?: number | undefined;
-  size?: number | undefined;
+
+  @ApiProperty({
+    description: 'Group owner',
+    example: 'John Doe',
+  })
+  subjectOwner?: string;
+
+  @ApiProperty({
+    description: 'Group creation time',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  subjectTime?: number;
+
+  @ApiProperty({
+    description: 'Group creation time',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  size?: number;
 }
 
-export interface SendMessageDto {
-  deviceID: string;
+export class SendMessageDto {
+  @ApiProperty({
+    description: 'To',
+    example: '6289917721000@c.us',
+  })
   to: string;
+  
+  @ApiProperty({
+    description: 'Message',
+    example: 'Hello, world!',
+  })
   message: string;
-  disappearingDay?: number | undefined;
+  
+  @ApiProperty({
+    description: 'Disappearing day',
+    example: 1,
+  })
+  disappearingDay?: number;
 }
 
-export interface SendMediaDto {
-  deviceID: string;
+export class SendMediaDto {
   to: string;
   urlMedia: string;
   mediaName: string;
   ptt: boolean;
   mediaType: string;
-  disappearingDay?: number | undefined;
+  disappearingDay?: number;
 }
 
-export interface DefaultResponse {
+export class DefaultResponse {
   success: boolean;
   code: number;
-  message?: string | undefined;
-  error?: string | undefined;
+  message?: string;
+  error?: string;
 }
+
+export class GenerateQR {
+  @ApiProperty({
+    description: 'QR code',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  qrCode: string;
+}
+
+
+export const GenerateQRResponse = createSingleSuccessResponseDto(
+  GenerateQR,
+  'GenerateQRResponse',
+);
+
+export const GetListResponse = createSingleSuccessResponseDto(
+  GetDevicesResponse,
+  'GetListResponse',
+);

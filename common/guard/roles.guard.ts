@@ -18,7 +18,6 @@ export class RolesGuard implements CanActivate {
       // Jika tidak ada peran yang ditentukan, izinkan akses
       return true;
     }
-    console.log('requiredRoles', requiredRoles);
     // Dapatkan request object dan user dari context
     const { user } = context.switchToHttp().getRequest();
 

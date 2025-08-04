@@ -42,4 +42,8 @@ export class AuthService {
 
     return user;
   }
+
+  async validateSignature(signature: string, timestamp: string, clientKey: string){
+    
+  }
 }

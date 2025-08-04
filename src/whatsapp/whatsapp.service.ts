@@ -262,15 +262,15 @@ export class WhatsappService {
     });
   }
 
-  async sendMessage(data: SendMessageDto): Promise<string> {
-    const { deviceID, to: phoneNumber, message, disappearingDay = 1 } = data;
-    await this.ensureDeviceInitialized(deviceID);
+  async sendMessage(id: string ,data: SendMessageDto): Promise<string> {
+    const { to, message, disappearingDay = 1 } = data;
+    await this.ensureDeviceInitialized(id);
 
     try {
       const result: WAProto.WebMessageInfo | undefined = await this.devices[
-        deviceID
+        id
       ].client?.sendMessage(
-        phoneNumber,
+        to,
         { text: message },
         {
           ephemeralExpiration: disappearingDay * 24 * 60 * 60,
@@ -283,9 +283,8 @@ export class WhatsappService {
     }
   }
 
-  async sendMedia(data: SendMediaDto): Promise<string> {
+  async sendMedia(id: string, data: SendMediaDto): Promise<string> {
     const {
-      deviceID,
       to: phoneNumber,
       urlMedia,
       ptt,
@@ -293,8 +292,8 @@ export class WhatsappService {
       disappearingDay = 0,
     } = data;
 
-    await this.ensureDeviceInitialized(deviceID);
-    const client = this.devices[deviceID].client;
+    await this.ensureDeviceInitialized(id);
+    const client = this.devices[id].client;
 
     try {
       if (mediaType === 'audio') {

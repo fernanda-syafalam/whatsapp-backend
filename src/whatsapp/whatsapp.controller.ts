@@ -1,27 +1,53 @@
-import { Body, Controller, Logger, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Logger,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { WhatsappService } from './whatsapp.service';
-import { DeviceID, SendMessageDto } from './dto/whatsapp';
+import { DeviceID, GenerateQR, GenerateQRResponse, GetListResponse, Group, SendMessageDto } from './dto/whatsapp';
+import {
+  ApiBadRequestResponse,
+  ApiHeader,
+  ApiHeaders,
+  ApiOkResponse,
+  ApiOperation,
+} from '@nestjs/swagger';
+import { createSingleSuccessResponseDto } from 'common/dto/api-response.dto';
+import { SnapAuthGuard } from 'common/guard/snap.guard';
 
 @Controller('whatsapp')
-export class WhatsappController  {
+export class WhatsappController {
   private readonly logger = new Logger(WhatsappController.name);
   constructor(private readonly whatsappService: WhatsappService) {}
 
-  @Post('disconnect')
-  async disconnect(@Body() request: DeviceID) {
+  @ApiOperation({ summary: 'Disconnect' })
+  @ApiBadRequestResponse({
+    description: 'Bad Request',
+  })
+  @Delete('disconnect/:id')
+  async disconnect(@Param() params: DeviceID) {
+    await this.whatsappService.disconnect(params.id);
     try {
-      await this.whatsappService.disconnect(request.deviceID);
       return { success: true, code: 200 };
     } catch (error) {
       throw error;
     }
   }
 
-  @Post('generate-qr')
-  async generateQr(@Body() request: DeviceID) {
+  @ApiOperation({ summary: 'Generate QR' })
+  @ApiOkResponse({
+    description: 'The QR code has been successfully generated.',
+    type: GenerateQRResponse,
+  })
+  @Post('generate-qr/:id')
+  async generateQr(@Param() params: DeviceID) {
     try {
-      const qrCode = await this.whatsappService.generateQr(request.deviceID);
-
+      const qrCode = await this.whatsappService.generateQr(params.id);
       return { qrCode };
     } catch (error) {
       this.logger.error('Error generating QR code', error.stack);
@@ -29,14 +55,27 @@ export class WhatsappController  {
     }
   }
 
+  @ApiOperation({ summary: 'Get devices' })
+  @ApiOkResponse({
+    description: 'The devices have been successfully retrieved.',
+    type: GetListResponse,
+  })
+  @Get('devices/:id')
   getDevices() {
     const data = this.whatsappService.getDevice();
     return { success: true, code: 200, message: data };
   }
 
-  async getGroups(request: DeviceID) {
+
+  @ApiOperation({ summary: 'Get groups' })
+  @ApiOkResponse({
+    description: 'The groups have been successfully retrieved.',
+    type: GetListResponse,
+  })
+  @Get('groups/:id')
+  async getGroups(@Param() request: DeviceID) {
     try {
-      const groups = await this.whatsappService.getGroups(request.deviceID);
+      const groups = await this.whatsappService.getGroups(request.id);
       return { success: true, code: 200, message: groups };
     } catch (error) {
       this.logger.error('Error getting groups', error.stack);
@@ -44,9 +83,18 @@ export class WhatsappController  {
     }
   }
 
-  async sendMessage(request: SendMessageDto) {
+  @ApiOperation({ summary: 'Send message' })
+  @ApiHeader({ name: 'X-SIGNATURE', required: true, description: 'Digital signature of the request' })
+  @ApiHeader({ name: 'X-TIMESTAMP', required: true, description: 'Request timestamp in ISO 8601 format' })
+  @ApiHeader({ name: 'X-CLIENT-KEY', required: true, description: 'The Client Key for authentication' })
+  @ApiOkResponse({
+    description: 'The message has been successfully sent.',
+  })
+  @Post('send-message/:id')
+  @UseGuards(SnapAuthGuard)
+  async sendMessage(@Param() params: DeviceID,@Body() request: SendMessageDto) {
     try {
-      const result = await this.whatsappService.sendMessage(request);
+      const result = await this.whatsappService.sendMessage(params.id, request);
       return { success: true, code: 200, message: result };
     } catch (error) {
       this.logger.error(
