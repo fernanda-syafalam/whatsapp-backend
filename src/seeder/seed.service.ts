@@ -1,26 +1,29 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { faker } from '@faker-js/faker';
-
+import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
+import { ConfigService } from '@nestjs/config';
+import { UserPermissionEnum } from '../../common/enums/user.enum';
+import { BotSchema } from '../../database/schema/bot.schema';
 import { CorporatesSchema } from '../../database/schema/corporate.schema';
+import { PermissionsSchema } from '../../database/schema/permission.schema';
 import { RoleSchema } from '../../database/schema/role.schema';
 import { UserToCorporateSchema } from '../../database/schema/user-corporate.schema';
+import { UserPermissionsSchema } from '../../database/schema/user-permission.schema';
 import { UserSchema } from '../../database/schema/user.schema';
-import * as bcrypt from 'bcryptjs';
-import { DatabaseService } from '../../src/database/database.service';
-import { PermissionsSchema } from '../../database/schema/permission.schema';
-import { BotSchema } from '../../database/schema/bot.schema';
-import { UserPermissionsSchema } from '../schema/user-permission.schema';
-import { UserPermissionEnum } from '../../common/enums/user.enum';
+import { DatabaseService } from '../database/database.service';
+
 type Corporate = { id: string; name: string; alias: string };
 
 @Injectable()
 export class SeedService {
   private readonly logger = new Logger(SeedService.name);
-  private readonly db;
+  private readonly db = this.databaseService.getConnection();
 
-  constructor(private readonly databaseService: DatabaseService) {
-    this.db = this.databaseService.getConnection();
-  }
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async run() {
     this.logger.log('Starting seed...');
@@ -62,6 +65,11 @@ export class SeedService {
       .values(corporates)
       .returning();
 
+    if (!adminRole || !userRole) {
+      this.logger.error('Failed to find admin or user role after seeding.');
+      throw new Error('Role seeding failed.');
+    }
+
     // 👤 Step 6: Seed admin
     const admin = await this.genRandomUser(adminRole.id);
     admin.email = 'example@example.com';
@@ -94,9 +102,12 @@ export class SeedService {
   }
 
   private genRandomCorporate() {
+    const { clientKey, clientSecret } = this.createSymetricKey();
     return {
       name: faker.company.name(),
       alias: faker.string.alphanumeric(3).toUpperCase(),
+      clientKey,
+      clientSecret,
     };
   }
 
@@ -107,6 +118,15 @@ export class SeedService {
       email: faker.internet.email(),
       password: password,
       role: roleId,
+    };
+  }
+
+  createSymetricKey() {
+    const clientKey = crypto.randomBytes(16).toString('hex');
+
+    return {
+      clientKey,
+      clientSecret: crypto.createHash('sha256').update(clientKey).digest('hex'),
     };
   }
 }

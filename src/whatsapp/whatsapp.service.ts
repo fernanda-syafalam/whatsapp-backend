@@ -25,6 +25,10 @@ import helper from 'common/utils/whatsapp.helper';
 import { SendMediaDto, SendMessageDto } from './dto/whatsapp';
 import { BotService } from 'src/bot/bot.service';
 import * as qrcode from 'qrcode';
+import { DatabaseService } from 'src/database/database.service';
+import { BotSchema } from 'database/schema/bot.schema';
+import { and, eq } from 'drizzle-orm';
+import { CorporateSelect } from 'database/schema/corporate.schema';
 
 export interface DeviceInstance {
   client: ReturnType<typeof makeWASocket> | null;
@@ -43,7 +47,11 @@ const cacheRetryCounter = new NodeCache({
 export class WhatsappService {
   private logger = new Logger(WhatsappService.name);
   private devices: Record<string, DeviceInstance> = {};
-  constructor(private readonly botService: BotService) {}
+  private readonly db = this.databaseService.getConnection();
+  constructor(
+    private readonly botService: BotService,
+    private readonly databaseService: DatabaseService,
+  ) {}
 
   private getAuthFolderPath(deviceID: string): string {
     return path.join(__dirname, `../../../auth/${deviceID}`);
@@ -262,7 +270,20 @@ export class WhatsappService {
     });
   }
 
-  async sendMessage(id: string ,data: SendMessageDto): Promise<string> {
+  async sendMessage(
+    client: CorporateSelect,
+    id: string,
+    data: SendMessageDto,
+  ): Promise<string> {
+    const isClientBot = await this.db
+      .select()
+      .from(BotSchema)
+      .where(and(eq(BotSchema.id, id), eq(BotSchema.corporateID, client?.id)));
+
+    if (isClientBot.length === 0) {
+      throw new BadRequestException('Bot not found');
+    }
+
     const { to, message, disappearingDay = 1 } = data;
     await this.ensureDeviceInitialized(id);
 

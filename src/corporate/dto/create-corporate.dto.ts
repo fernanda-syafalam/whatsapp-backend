@@ -1,6 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
-import { createListSuccessResponseDto, createListSuccessResponseDtoWithoutPagination, createSingleSuccessResponseDto } from 'common/dto/api-response.dto';
+import {
+  createListSuccessResponseDto,
+  createListSuccessResponseDtoWithoutPagination,
+  createSingleSuccessResponseDto,
+} from 'common/dto/api-response.dto';
 
 export class CreateCorporateDto {
   @ApiProperty({
@@ -30,7 +34,8 @@ export const ListCorporateResponseDto = createListSuccessResponseDto(
   'ListCorporateResponseDto',
 );
 
-export const ListCorporateResponseWithoutPaginationDto = createListSuccessResponseDtoWithoutPagination(
-  CreateCorporateDto,
-  'ListCorporateResponseWithoutPaginationDto',
-);
+export const ListCorporateResponseWithoutPaginationDto =
+  createListSuccessResponseDtoWithoutPagination(
+    CreateCorporateDto,
+    'ListCorporateResponseWithoutPaginationDto',
+  );

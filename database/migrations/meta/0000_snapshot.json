@@ -1,5 +1,5 @@
 {
-  "id": "521d509d-aaab-4987-a7f8-895713a790b6",
+  "id": "fcd27790-6227-4707-a4ec-a7f715e078dd",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -114,6 +114,31 @@
           "primaryKey": false,
           "notNull": true
         },
+        "client_key": {
+          "name": "client_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "client_secret": {
+          "name": "client_secret",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "client_public_key": {
+          "name": "client_public_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -145,6 +170,13 @@
           "nullsNotDistinct": false,
           "columns": [
             "alias"
+          ]
+        },
+        "corporates_client_key_unique": {
+          "name": "corporates_client_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "client_key"
           ]
         }
       },

@@ -7,17 +7,36 @@ import { eq, sql } from 'drizzle-orm';
 import { PaginationQueryDto } from 'common/dto/pagination-query.dto';
 import { BotSchema } from 'database/schema/bot.schema';
 import { UserToCorporateSchema } from 'database/schema/user-corporate.schema';
+import { SecurityUtils } from 'common/utils/security';
+import { ConfigService } from '@nestjs/config';
+import { CryptoUtils } from 'common/utils/crypto';
 
 @Injectable()
 export class CorporateService {
   private readonly db = this.databaseService.getConnection();
-  constructor(private readonly databaseService: DatabaseService) {}
+  private readonly masterKey: Buffer;
 
-  create(createCorporateDto: CreateCorporateDto) {
-    return this.db
-      .insert(CorporatesSchema)
-      .values(createCorporateDto)
-      .returning();
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly configService: ConfigService,
+  ) {
+    const keyString = this.configService.get<string>('MASTER_ENCRYPTION_KEY');
+    if (!keyString) {
+      throw new Error('MASTER_ENCRYPTION_KEY not defined');
+    }
+    this.masterKey = Buffer.from(keyString, 'base64');
+  }
+
+  async create(createCorporateDto: CreateCorporateDto) {
+    const { clientKey, clientSecret } = CryptoUtils.createSymmetricKey();
+
+    const data = {
+      ...createCorporateDto,
+      clientKey,
+      clientSecret,
+    };
+
+    return this.db.insert(CorporatesSchema).values(data).returning();
   }
 
   async findAll(paginationQuery: PaginationQueryDto) {
@@ -63,8 +82,23 @@ export class CorporateService {
     return this.db.select().from(CorporatesSchema);
   }
 
-  findOne(id: string) {
-    return `This action returns a #${id} corporate`;
+  async findOne(id: string) {
+    const corporate = await this.db
+      .select()
+      .from(CorporatesSchema)
+      .where(eq(CorporatesSchema.id, id));
+
+    return corporate[0];
+  }
+
+  async findByClientKey(clientKey: string) {
+    const corporate = await this.db
+      .select()
+      .from(CorporatesSchema)
+      .where(eq(CorporatesSchema.clientKey, clientKey))
+      .limit(1);
+
+    return corporate[0];
   }
 
   update(id: string, updateCorporateDto: UpdateCorporateDto) {
@@ -72,8 +106,6 @@ export class CorporateService {
   }
 
   remove(id: string) {
-    return this.db
-      .delete(CorporatesSchema)
-      .where(eq(CorporatesSchema.id, id))
+    return this.db.delete(CorporatesSchema).where(eq(CorporatesSchema.id, id));
   }
 }

@@ -1,4 +1,5 @@
 import {
+  boolean,
   pgTable,
   serial,
   text,
@@ -14,6 +15,10 @@ export const CorporatesSchema = pgTable('corporates', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: varchar('name', { length: 255 }).notNull().unique(),
   alias: varchar('alias', { length: 255 }).notNull().unique(),
+  clientKey: text('client_key').notNull().unique(),
+  clientSecret: text('client_secret').notNull(),
+  clientPublicKey: text('client_public_key'),
+  isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()
@@ -26,5 +31,5 @@ export const CorporatesRelations = relations(CorporatesSchema, ({ many }) => ({
   botsToCorporates: many(BotSchema),
 }));
 
-export type Corporate = typeof CorporatesSchema.$inferSelect;
+export type CorporateSelect = typeof CorporatesSchema.$inferSelect;
 export type InsertCorporate = typeof CorporatesSchema.$inferInsert;

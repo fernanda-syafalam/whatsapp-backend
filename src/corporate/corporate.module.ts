@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { CorporateService } from './corporate.service';
 import { CorporateController } from './corporate.controller';
 import { DatabaseModule } from 'src/database/database.module';
@@ -7,5 +7,6 @@ import { DatabaseModule } from 'src/database/database.module';
   controllers: [CorporateController],
   providers: [CorporateService],
   imports: [DatabaseModule],
+  exports: [CorporateService],
 })
 export class CorporateModule {}

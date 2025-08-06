@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 import { createSingleSuccessResponseDto } from 'common/dto/api-response.dto';
 
 export class DeviceID {
@@ -60,18 +60,22 @@ export class SendMessageDto {
     description: 'To',
     example: '6289917721000@c.us',
   })
+  @IsString()
   to: string;
   
   @ApiProperty({
     description: 'Message',
     example: 'Hello, world!',
   })
+  @IsString()
   message: string;
   
   @ApiProperty({
     description: 'Disappearing day',
     example: 1,
   })
+  @IsOptional()
+  @IsNumber()
   disappearingDay?: number;
 }
 

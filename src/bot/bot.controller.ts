@@ -25,8 +25,6 @@ import {
 } from '@nestjs/swagger';
 import {
   createErrorResponseDto,
-  createListSuccessResponseDto,
-  createSingleSuccessResponseDto,
 } from 'common/dto/api-response.dto';
 
 @Controller('bots')

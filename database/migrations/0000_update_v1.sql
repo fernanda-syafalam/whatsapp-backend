@@ -14,10 +14,15 @@ CREATE TABLE "corporates" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" varchar(255) NOT NULL,
 	"alias" varchar(255) NOT NULL,
+	"client_key" text NOT NULL,
+	"client_secret" text NOT NULL,
+	"client_public_key" text,
+	"is_active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "corporates_name_unique" UNIQUE("name"),
-	CONSTRAINT "corporates_alias_unique" UNIQUE("alias")
+	CONSTRAINT "corporates_alias_unique" UNIQUE("alias"),
+	CONSTRAINT "corporates_client_key_unique" UNIQUE("client_key")
 );
 --> statement-breakpoint
 CREATE TABLE "permissions" (

@@ -1,31 +1,26 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy } from 'passport-local';
+// import { Request } from 'express'; // Import Request type
+import { Strategy } from 'passport-custom'; // <-- Change this line
+import { ConfigService } from '@nestjs/config';
 import { AuthService } from '../auth.service';
+import { CryptoUtils } from 'common/utils/crypto';
 
 @Injectable()
-export class SnapStrategy extends PassportStrategy(Strategy, 'snap-auth') {
-  constructor(private readonly authService: AuthService) {
+export class SnapStrategy extends PassportStrategy(Strategy, 'snap') {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly authService: AuthService,
+  ) {
     super();
   }
 
   async validate(request: Request) {
-    const signature = request.headers['x-signature'] as string;
-    const timestamp = request.headers['x-timestamp'] as string;
-    const clientKey = request.headers['x-client-key'] as string;
-
-    if (!signature || !timestamp || !clientKey) {
-      throw new UnauthorizedException('Missing required headers');
+    try {
+      const client = await this.authService.validateSymmetricRequest(request);
+      return client;
+    } catch (error) {
+      throw new UnauthorizedException(error.message);
     }
-
-    const isValid = this.authService.validateSignature(
-      signature,
-      timestamp,
-      clientKey,
-    );
-    if (!isValid) {
-      throw new UnauthorizedException('Invalid signature');
-    }
-    return { clientKey };
   }
 }

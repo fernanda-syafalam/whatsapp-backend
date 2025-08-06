@@ -6,6 +6,7 @@ import {
   Logger,
   Param,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { WhatsappService } from './whatsapp.service';
@@ -19,6 +20,8 @@ import {
 } from '@nestjs/swagger';
 import { createSingleSuccessResponseDto } from 'common/dto/api-response.dto';
 import { SnapAuthGuard } from 'common/guard/snap.guard';
+import { AuthGuard } from '@nestjs/passport';
+import { CorporateSelect } from 'database/schema/corporate.schema';
 
 @Controller('whatsapp')
 export class WhatsappController {
@@ -92,9 +95,10 @@ export class WhatsappController {
   })
   @Post('send-message/:id')
   @UseGuards(SnapAuthGuard)
-  async sendMessage(@Param() params: DeviceID,@Body() request: SendMessageDto) {
+  async sendMessage(@Param() params: DeviceID,@Body() requestBody: SendMessageDto, @Req() req: any) {
     try {
-      const result = await this.whatsappService.sendMessage(params.id, request);
+      const client = req.user as CorporateSelect
+      const result = await this.whatsappService.sendMessage(client ,params.id, requestBody);
       return { success: true, code: 200, message: result };
     } catch (error) {
       this.logger.error(
